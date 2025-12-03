@@ -1,0 +1,17 @@
+The problem:
+
+I need to create an AI Agent for running my google ads account. 
+
+The ai agent should be able to:
+- Analyze the account and make recommendations for improvements
+- Create and manage campaigns and ad groups
+- Create and manage ads
+- Create and manage keywords
+- Create and manage ad extensions
+- Create and manage landing pages
+- Create and manage ad groups
+- Create and manage ads
+- Create and manage keywords
+- Create and manage ad extensions
+
+Please hook in the google analytics MCP and the google ads MCP so that the ai agent can use them to make recommendations and decisions.

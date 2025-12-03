@@ -1,0 +1,379 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User and Authentication
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  googleAdsAccounts GoogleAdsAccount[]
+  insights      Insight[]
+  reports       Report[]
+  alerts        Alert[]
+  recommendations Recommendation[]
+  settings      UserSettings?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Google Ads Related Models
+model GoogleAdsAccount {
+  id                    String   @id @default(cuid())
+  userId                String
+  customerId            String   @unique
+  accountName           String
+  currencyCode          String?
+  timezone              String?
+  isActive              Boolean  @default(true)
+  lastSyncedAt          DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns             Campaign[]
+  insights              Insight[]
+  recommendations       Recommendation[]
+  alerts                Alert[]
+  performanceSnapshots  PerformanceSnapshot[]
+}
+
+model Campaign {
+  id                String   @id @default(cuid())
+  googleAdsAccountId String
+  campaignId        String
+  name              String
+  status            String
+  advertisingChannelType String
+  budget            Float?
+  biddingStrategy   String?
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  googleAdsAccount  GoogleAdsAccount @relation(fields: [googleAdsAccountId], references: [id], onDelete: Cascade)
+  adGroups          AdGroup[]
+  metrics           CampaignMetrics[]
+
+  @@unique([googleAdsAccountId, campaignId])
+}
+
+model AdGroup {
+  id          String   @id @default(cuid())
+  campaignId  String
+  adGroupId   String
+  name        String
+  status      String
+  cpcBid      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ads         Ad[]
+  keywords    Keyword[]
+  metrics     AdGroupMetrics[]
+
+  @@unique([campaignId, adGroupId])
+}
+
+model Ad {
+  id          String   @id @default(cuid())
+  adGroupId   String
+  adId        String
+  type        String
+  status      String
+  headlines   Json
+  descriptions Json
+  finalUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  adGroup     AdGroup @relation(fields: [adGroupId], references: [id], onDelete: Cascade)
+  metrics     AdMetrics[]
+
+  @@unique([adGroupId, adId])
+}
+
+model Keyword {
+  id          String   @id @default(cuid())
+  adGroupId   String
+  keywordId   String
+  text        String
+  matchType   String
+  status      String
+  qualityScore Int?
+  bid         Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  adGroup     AdGroup @relation(fields: [adGroupId], references: [id], onDelete: Cascade)
+  metrics     KeywordMetrics[]
+
+  @@unique([adGroupId, keywordId])
+}
+
+// Performance Metrics Models
+model CampaignMetrics {
+  id          String   @id @default(cuid())
+  campaignId  String
+  date        DateTime
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  cost        Float    @default(0)
+  conversions Float    @default(0)
+  conversionValue Float @default(0)
+  ctr         Float    @default(0)
+  cpc         Float    @default(0)
+  cpa         Float    @default(0)
+  roas        Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@index([date])
+}
+
+model AdGroupMetrics {
+  id          String   @id @default(cuid())
+  adGroupId   String
+  date        DateTime
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  cost        Float    @default(0)
+  conversions Float    @default(0)
+  conversionValue Float @default(0)
+  ctr         Float    @default(0)
+  cpc         Float    @default(0)
+  cpa         Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  adGroup     AdGroup @relation(fields: [adGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([adGroupId, date])
+  @@index([date])
+}
+
+model AdMetrics {
+  id          String   @id @default(cuid())
+  adId        String
+  date        DateTime
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  cost        Float    @default(0)
+  conversions Float    @default(0)
+  ctr         Float    @default(0)
+  cpc         Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  ad          Ad @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@unique([adId, date])
+  @@index([date])
+}
+
+model KeywordMetrics {
+  id          String   @id @default(cuid())
+  keywordId   String
+  date        DateTime
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  cost        Float    @default(0)
+  conversions Float    @default(0)
+  ctr         Float    @default(0)
+  cpc         Float    @default(0)
+  qualityScore Int?
+  createdAt   DateTime @default(now())
+
+  keyword     Keyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@unique([keywordId, date])
+  @@index([date])
+}
+
+// AI Agent Models
+model Insight {
+  id                String   @id @default(cuid())
+  userId            String
+  googleAdsAccountId String?
+  title             String
+  description       String   @db.Text
+  category          String
+  severity          String
+  actionable        Boolean  @default(true)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleAdsAccount  GoogleAdsAccount? @relation(fields: [googleAdsAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([googleAdsAccountId])
+}
+
+model Recommendation {
+  id                String   @id @default(cuid())
+  userId            String
+  googleAdsAccountId String
+  type              String
+  title             String
+  description       String   @db.Text
+  priority          Int
+  estimatedImpact   String?
+  status            String   @default("pending")
+  appliedAt         DateTime?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleAdsAccount  GoogleAdsAccount @relation(fields: [googleAdsAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([googleAdsAccountId, status])
+}
+
+model Alert {
+  id                String   @id @default(cuid())
+  userId            String
+  googleAdsAccountId String
+  type              String
+  severity          String
+  title             String
+  message           String   @db.Text
+  isRead            Boolean  @default(false)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleAdsAccount  GoogleAdsAccount @relation(fields: [googleAdsAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([googleAdsAccountId])
+}
+
+model PerformanceSnapshot {
+  id                String   @id @default(cuid())
+  googleAdsAccountId String
+  date              DateTime
+  totalImpressions  Int
+  totalClicks       Int
+  totalCost         Float
+  totalConversions  Float
+  totalConversionValue Float
+  avgCtr            Float
+  avgCpc            Float
+  avgCpa            Float
+  roas              Float
+  activeCampaigns   Int
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  googleAdsAccount  GoogleAdsAccount @relation(fields: [googleAdsAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([googleAdsAccountId, date])
+  @@index([date])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  type        String
+  schedule    String?
+  config      Json
+  lastRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Optimization History
+model OptimizationAction {
+  id          String   @id @default(cuid())
+  type        String
+  entityType  String
+  entityId    String
+  action      String
+  previousValue Json?
+  newValue    Json?
+  impact      Json?
+  automated   Boolean  @default(false)
+  approvedBy  String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// User Settings for API Credentials
+model UserSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  
+  // Google Ads API Credentials (encrypted)
+  googleAdsDeveloperToken    String?  @db.Text
+  googleAdsClientId          String?  @db.Text
+  googleAdsClientSecret      String?  @db.Text
+  googleAdsRefreshToken      String?  @db.Text
+  googleAdsLoginCustomerId   String?
+  
+  // Anthropic API Key (encrypted)
+  anthropicApiKey       String?  @db.Text
+  
+  // Feature flags
+  enableAutonomousOptimization Boolean @default(false)
+  enableEmailAlerts           Boolean @default(true)
+  enableSlackAlerts           Boolean @default(false)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
