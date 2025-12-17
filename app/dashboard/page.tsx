@@ -201,6 +201,8 @@ export default function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState("Overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPrompt, setSelectedPrompt] = useState<typeof AI_PROMPTS[0] | null>(null);
+  const [aiResponse, setAiResponse] = useState<string>("");
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
 
   // AI Response Customization Settings
   const [detailLevel, setDetailLevel] = useState(75); // 0-100, Minimal to Comprehensive
@@ -230,6 +232,53 @@ export default function DashboardPage() {
     "call-extensions-review": { status: "pending", progress: 0, priority: "low" },
     "auction-insights": { status: "in-progress", progress: 40, priority: "medium" },
     "keyword-quality-score": { status: "review", progress: 100, priority: "high" },
+  };
+
+  // Map prompt titles to API IDs
+  const getPromptId = (title: string): string => {
+    const mapping: Record<string, string> = {
+      "Negative Keyword Identification": "negative-keyword-identification",
+      "Search Term N-gram Analysis": "search-term-ngram-analysis",
+      "Search Term Pattern Analysis": "search-term-pattern-analysis",
+    };
+    return mapping[title] || "";
+  };
+
+  // Handle prompt execution
+  const handleUsePrompt = async (prompt: typeof AI_PROMPTS[0]) => {
+    setSelectedPrompt(prompt);
+    setAiResponse("");
+    setIsLoadingResponse(true);
+
+    const promptId = getPromptId(prompt.title);
+
+    if (!promptId) {
+      setAiResponse("This prompt is not yet configured for testing. Only Search Terms prompts are available.");
+      setIsLoadingResponse(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/ai/test-prompt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ promptId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get AI response");
+      }
+
+      setAiResponse(data.content);
+    } catch (error: any) {
+      setAiResponse(`Error: ${error.message}\n\nPlease check that your OpenAI API key is configured in .env.local`);
+    } finally {
+      setIsLoadingResponse(false);
+    }
   };
 
   return (
@@ -279,67 +328,218 @@ export default function DashboardPage() {
             </div>
 
             {/* Prompt Display or Task List */}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
               {selectedPrompt ? (
-                <>
+                <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-gray-900">Your Prompts</h2>
+                    <h2 className="text-sm font-semibold text-gray-900">AI Response</h2>
                     <button
-                      onClick={() => setSelectedPrompt(null)}
+                      onClick={() => {
+                        setSelectedPrompt(null);
+                        setAiResponse("");
+                      }}
                       className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                     >
                       <RotateCcw className="w-3 h-3" />
                       Clear
                     </button>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                    {selectedPrompt.title}
+
+                  {/* Prompt Title */}
+                  <div className="mb-3 pb-3 border-b border-gray-200">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Analyzing</div>
+                    <div className="text-sm font-semibold text-gray-900">{selectedPrompt.title}</div>
                   </div>
-                </>
+
+                  {/* AI Response */}
+                  {isLoadingResponse ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mb-3"></div>
+                      <p className="text-sm text-gray-500">Analyzing data...</p>
+                    </div>
+                  ) : aiResponse ? (
+                    <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {aiResponse}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-sm text-gray-500">
+                      Waiting for response...
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
-                  <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    Optimization Tasks
-                  </h2>
-                  <div className="space-y-2">
-                    {STAB_TASKS.slice(0, 7).map((task) => {
-                      const Icon = task.icon;
-                      const taskStatus = taskStatuses[task.id];
+                  {/* Task List Header */}
+                  <div className="p-4 border-b border-gray-200">
+                    <h2 className="text-sm font-bold text-gray-900 mb-1">Optimization Tasks</h2>
+                    <p className="text-xs text-gray-500">7 tasks • 2 in progress</p>
+                  </div>
 
-                      return (
-                        <button
-                          key={task.id}
-                          className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors text-left"
-                        >
-                          <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
-                            <Icon className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 mb-1">
-                              {task.title}
-                            </div>
-                            {taskStatus && taskStatus.progress > 0 && (
-                              <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
-                                <div
-                                  className="bg-teal-500 h-1.5 rounded-full transition-all"
-                                  style={{ width: `${taskStatus.progress}%` }}
-                                />
+                  {/* Task Groups */}
+                  <div className="p-3">
+                    {/* In Progress Tasks */}
+                    <div className="mb-5">
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+                        In Progress (2)
+                      </h3>
+                      <div className="space-y-2">
+                        {STAB_TASKS.slice(0, 7)
+                          .filter((task) => taskStatuses[task.id]?.status === "in-progress")
+                          .map((task) => {
+                            const Icon = task.icon;
+                            const taskStatus = taskStatuses[task.id];
+
+                            return (
+                              <div
+                                key={task.id}
+                                className="group bg-white border border-gray-200 rounded-lg p-3 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-400 to-teal-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                    <Icon className="w-4 h-4 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-gray-900 mb-1">
+                                      {task.title}
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-semibold rounded uppercase">
+                                        {taskStatus?.priority}
+                                      </span>
+                                      <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-semibold rounded">
+                                        In Progress
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                      <div
+                                        className="bg-gradient-to-r from-teal-500 to-teal-600 h-2 rounded-full transition-all shadow-sm"
+                                        style={{ width: `${taskStatus.progress}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-[11px] text-gray-500 font-medium">
+                                      {taskStatus.progress}% complete
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500 capitalize">
-                                {taskStatus?.status || 'pending'}
-                              </span>
-                              {taskStatus && taskStatus.progress > 0 && (
-                                <span className="text-xs text-gray-400">
-                                  {taskStatus.progress}%
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                            );
+                          })}
+                      </div>
+                    </div>
+
+                    {/* Review Tasks */}
+                    <div className="mb-5">
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+                        Ready for Review (2)
+                      </h3>
+                      <div className="space-y-2">
+                        {STAB_TASKS.slice(0, 7)
+                          .filter((task) => taskStatuses[task.id]?.status === "review")
+                          .map((task) => {
+                            const Icon = task.icon;
+                            const taskStatus = taskStatuses[task.id];
+
+                            return (
+                              <div
+                                key={task.id}
+                                className="group bg-white border-2 border-green-200 rounded-lg p-3 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-400 to-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                    <Icon className="w-4 h-4 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-gray-900 mb-1">
+                                      {task.title}
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-semibold rounded uppercase">
+                                        {taskStatus?.priority}
+                                      </span>
+                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-semibold rounded flex items-center gap-1">
+                                        <Eye className="w-3 h-3" />
+                                        Review
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+
+                    {/* Completed Tasks */}
+                    <div className="mb-5">
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+                        Completed (1)
+                      </h3>
+                      <div className="space-y-2">
+                        {STAB_TASKS.slice(0, 7)
+                          .filter((task) => taskStatuses[task.id]?.status === "completed")
+                          .map((task) => {
+                            const Icon = task.icon;
+                            const taskStatus = taskStatuses[task.id];
+
+                            return (
+                              <div
+                                key={task.id}
+                                className="group bg-gray-50 border border-gray-200 rounded-lg p-3 opacity-75 hover:opacity-100 transition-all cursor-pointer"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-9 h-9 rounded-lg bg-gray-300 flex items-center justify-center flex-shrink-0">
+                                    <Icon className="w-4 h-4 text-gray-600" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-gray-600 mb-1 line-through">
+                                      {task.title}
+                                    </div>
+                                    <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-[10px] font-semibold rounded">
+                                      Completed
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+
+                    {/* Pending Tasks */}
+                    <div>
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+                        To Do (2)
+                      </h3>
+                      <div className="space-y-2">
+                        {STAB_TASKS.slice(0, 7)
+                          .filter((task) => taskStatuses[task.id]?.status === "pending")
+                          .map((task) => {
+                            const Icon = task.icon;
+                            const taskStatus = taskStatuses[task.id];
+
+                            return (
+                              <div
+                                key={task.id}
+                                className="group bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                    <Icon className="w-4 h-4 text-gray-500" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-gray-700 mb-1">
+                                      {task.title}
+                                    </div>
+                                    <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-semibold rounded uppercase">
+                                      {taskStatus?.priority}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
@@ -424,7 +624,7 @@ export default function DashboardPage() {
                   prompt.category === selectedPromptCategory
                 )
                 .map((prompt) => (
-                  <PromptCard key={prompt.id} prompt={prompt} onUsePrompt={setSelectedPrompt} />
+                  <PromptCard key={prompt.id} prompt={prompt} onUsePrompt={handleUsePrompt} />
                 ))}
             </div>
 

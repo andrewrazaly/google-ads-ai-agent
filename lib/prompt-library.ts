@@ -1,0 +1,137 @@
+// Full prompt library with complete prompt texts
+
+export const PROMPT_LIBRARY = {
+  "negative-keyword-identification": {
+    title: "Negative Keyword Identification",
+    category: "Search Terms",
+    promptText: `Analyze the provided search terms data to identify opportunities for new negative keywords that will improve account efficiency. Create a clean well-formatted negative keyword strategy that:
+
+1. Focuses on search terms with significant spend $30+ but zero or poor conversion performance
+
+2. Groups non-converting terms into clear categories:
+   - Competitor brands not carried e.g. competitor names
+   - Irrelevant product types products you don't sell
+   - Location qualifiers when inappropriate
+   - Qualification terms that indicate poor intent
+
+3. For each recommended negative keyword:
+   - Present in a clean standard format with normal punctuation
+   - Clearly show the exact format to add exact match [term] phrase match "term" or broad match term
+   - Include a clean data table showing search term cost impressions clicks conversions
+   - Clearly state which campaign(s) the negative should be applied to
+
+4. Structure recommendations in a clean hierarchical format:
+   - HIGH PRIORITY significant wasted spend >$50
+   - MEDIUM PRIORITY moderate wasted spend $20-50
+   - LOW PRIORITY minor wasted spend <$20
+
+5. For each recommendation provide:
+   - Simple clear reasoning with minimal text
+   - Clear implementation instructions
+   - Estimated monthly savings
+
+6. End with a simple implementation roadmap in standard table format no special characters
+
+Use only standard characters and formatting in your response. Do not use unusual dashes bullets or special formatting that might not display correctly. Keep tables simple with standard spacing.`,
+    dataType: "searchTerms"
+  },
+
+  "search-term-ngram-analysis": {
+    title: "Search Term N-gram Analysis",
+    category: "Search Terms",
+    promptText: `# Google Ads Search Term N-gram Analysis Expert
+
+You are an expert Google Ads consultant specializing in search term n-gram analysis. Analyze the provided search term n-gram data to identify user intent patterns and optimization opportunities.
+
+## About the Data
+- This data shows n-gram performance metrics from actual user searches
+- Each row represents a word or phrase found across multiple search queries
+- 'Count' indicates how many unique search terms contain this n-gram
+- Data is sorted by impressions highest first
+- Only the top 500 n-grams are shown if the dataset exceeds 500 rows
+
+## Your Analysis Task
+
+1. **Executive Summary**
+   Provide a concise overview of key search patterns and user intent insights. Include general observations about high-value search patterns, problematic search trends, and notable conversion patterns.
+
+2. **Top Opportunities** Identify 3-5 specific opportunities:
+   - High-Converting Search Patterns: identify n-grams with strong intent signals and good conversion metrics
+   - Low-Quality Traffic Sources: high-cost n-grams with poor conversion rates
+   - Negative Keyword Candidates: n-grams showing clear irrelevance or poor performance
+   - User Intent Clusters: patterns that reveal specific audience segments or needs
+   - Anomalous Search Behaviors: unusual patterns worth investigating
+
+3. **Recommended Actions** Create a clear table
+   Format as:
+   | Opportunity | Action | Expected Impact |
+   For each opportunity provide a specific actionable recommendation and its potential benefit
+
+4. **Further Analysis Suggestions**
+   Suggest 3-5 additional analyses that would complement your findings
+
+5. **Summary**
+   Briefly recap key takeaways and potential impact of implementing your recommendations (cost savings, ROAS improvements, etc.)
+
+## Guidelines
+- Focus on user intent and search behavior insights
+- Distinguish between navigational, informational, and transactional search patterns
+- Use the 'Count' metric to prioritize widespread patterns versus outliers
+- Consider both defensive strategies (preventing wasted spend) and growth strategies (capturing valuable traffic)
+- Identify search trends that may indicate new product market opportunities
+- Be specific with recommendations for search term optimization
+- Use clear concise language appropriate for marketing professionals`,
+    dataType: "ngram"
+  },
+
+  "search-term-pattern-analysis": {
+    title: "Search Term Pattern Analysis",
+    category: "Search Terms",
+    promptText: `# Google Ads Search Term Pattern Analysis Expert
+
+You are an expert Google Ads consultant specializing in search term pattern analysis. Analyze converting search terms to identify common patterns, modifiers, and user intent signals that can inform keyword strategy and ad copy optimization.
+
+## About the Data
+- This data shows search terms that have generated conversions in your campaigns
+- Each row represents a specific search term with its conversion performance
+- Data includes search term text, impressions, clicks, cost, conversions, and conversion value
+- Search terms reveal actual user language and intent patterns
+- Data helps identify opportunities for keyword expansion and ad copy optimization
+- Terms show what language resonates with converting users
+
+## Your Analysis Task
+
+1. **Executive Summary**
+   Provide a concise overview of search term patterns and user intent insights. Include observations about high-value patterns, user language preferences, and conversion signals.
+
+2. **Pattern Identification Analysis**
+   - **High-Converting Modifiers**: Identify words and phrases that consistently appear in converting search terms
+   - **Intent Category Patterns**: Group terms by user intent (price-focused, quality-focused, location-specific, feature-specific)
+   - **User Language Analysis**: Analyze the specific language and terminology your converting users employ
+   - **Negative Pattern Identification**: Identify patterns in non-converting terms that should be excluded
+
+3. **Conversion Signal Analysis** Create a clear table
+   Format as:
+   | Pattern Category | Common Modifiers | Conversion Performance | Strategic Application | Priority |
+   For each identified pattern, analyze its conversion potential and strategic value.
+
+4. **Strategic Applications**
+   - **Keyword Strategy Enhancement**: Recommend how to leverage patterns in keyword expansion and selection
+   - **Ad Copy Optimization**: Suggest incorporating high-converting language patterns into ad copy
+   - **Negative Keyword Strategy**: Recommend negative keywords based on poor-performing patterns
+   - **Landing Page Alignment**: Suggest aligning landing page content with converting search term language
+
+5. **Implementation Recommendations**
+   Provide specific actions for leveraging search term patterns to improve overall campaign performance and user targeting.
+
+## Guidelines
+- Focus on patterns that have statistical significance rather than isolated examples
+- Distinguish between different types of user intent (informational, navigational, transactional)
+- Consider both explicit modifiers (price terms, quality terms) and implicit intent signals
+- Identify patterns that indicate users at different stages of the buying journey
+- Balance pattern-based insights with broader keyword strategy considerations
+- Be specific with actionable recommendations for applying pattern insights
+- Use clear, concise language appropriate for marketing professionals`,
+    dataType: "convertingTerms"
+  }
+};
